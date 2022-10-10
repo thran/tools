@@ -20,9 +20,15 @@ class SKManager:
         self.plain_path = Path(__file__).parent / 'sk.txt'
         self.secret_path = Path(__file__).parent / '.sk'
 
-    def get_password(self) -> str:
+    def get_password(self, repeat=False) -> str:
         if self._password is None:
-            self._password = getpass()
+            if repeat:
+                password1 = getpass()
+                password2 = getpass('Repeat password')
+                assert password1 == password2, 'Passwords does not match'
+                self._password = password1
+            else:
+                self._password = getpass()
         return self._password
 
     def _get_encryption_key(self, password):
@@ -34,11 +40,11 @@ class SKManager:
         )
         return base64.urlsafe_b64encode(kdf.derive(password.encode()))
 
-    def _get_fernet(self):
-        return Fernet(self._get_encryption_key(self.get_password()))
+    def _get_fernet(self, repeat_password=False):
+        return Fernet(self._get_encryption_key(self.get_password(repeat=repeat_password)))
 
-    def encrypt(self, text:str) -> bytes:
-        return self._get_fernet().encrypt(text.encode())
+    def encrypt(self, text: str) -> bytes:
+        return self._get_fernet(repeat_password=True).encrypt(text.encode())
 
     def decrypt(self, cipher: bytes) -> str:
         return self._get_fernet().decrypt(cipher).decode()
